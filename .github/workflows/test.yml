@@ -101,6 +101,10 @@ jobs:
           cat > "$RUNNER_TEMP/fakebin/lmut" <<'EOF'
           #!/bin/sh
           # Stub lmut for smoke tests: deterministic canned output.
+          if [ "$1" = "--version" ]; then
+            echo "lmut 0.0.3"
+            exit 0
+          fi
           echo 'Mutation score: 50.0% (1 killed, 1 survived, 0 timed out)'
           echo 'Survived: fixtures/sample/lua/add.lua:12:3 — changed `or` to `and`'
           EOF
@@ -113,6 +117,7 @@ jobs:
         uses: ./
         with:
           install: 'false' # stub lmut from the previous step is on PATH
+          version: 0.0.3 # pinned so cache-key.sh stays offline
           path: fixtures/sample
           test-command: busted
 
@@ -136,3 +141,34 @@ jobs:
           { grep '^Survived:' "$RUNNER_TEMP/lmut.log" || true; } | ./scripts/report.sh
           grep -qi "mutation score" "$GITHUB_STEP_SUMMARY"
           grep -q "50\.0%" "$GITHUB_STEP_SUMMARY"
+
+      - name: Break stub lmut (cache hit must not invoke it)
+        if: ${{ hashFiles('action.yml') != '' }}
+        run: |
+          cat > "$RUNNER_TEMP/fakebin/lmut" <<'EOF'
+          #!/bin/sh
+          # Failing stub: the cached second run must never reach lmut.
+          # --version also fails so cache-key.sh falls back to the pinned input.
+          touch "$RUNNER_TEMP/lmut-invoked"
+          echo "lmut should not run on a cache hit" >&2
+          exit 3
+          EOF
+          chmod +x "$RUNNER_TEMP/fakebin/lmut"
+
+      - name: Re-run local action (expects cache hit)
+        id: mutation-cached
+        if: ${{ hashFiles('action.yml') != '' }}
+        uses: ./
+        with:
+          install: 'false'
+          version: 0.0.3
+          path: fixtures/sample
+          test-command: busted
+
+      - name: Assert cache hit reused the log
+        if: ${{ hashFiles('action.yml') != '' }}
+        run: |
+          test "${{ steps.mutation-cached.outputs.mutation-score }}" = "50.0" || { echo "wrong mutation-score: ${{ steps.mutation-cached.outputs.mutation-score }}"; exit 1; }
+          test "${{ steps.mutation-cached.outputs.killed }}" = "1" || { echo "wrong killed: ${{ steps.mutation-cached.outputs.killed }}"; exit 1; }
+          test "${{ steps.mutation-cached.outputs.survived }}" = "1" || { echo "wrong survived: ${{ steps.mutation-cached.outputs.survived }}"; exit 1; }
+          test ! -e "$RUNNER_TEMP/lmut-invoked" || { echo "lmut ran on a cache hit"; exit 1; }

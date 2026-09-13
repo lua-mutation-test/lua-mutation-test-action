@@ -47,6 +47,10 @@ inputs:
     description: Download and install the lmut binary ('true'/'false'). Set to 'false' when lmut is already on PATH (e.g. pre-installed runners, CI smoke tests with a stub).
     required: false
     default: 'true'
+  cache:
+    description: Reuse the previous run's lmut.log from the GitHub Actions cache when all run inputs are unchanged ('true'/'false').
+    required: false
+    default: 'true'
 
 outputs:
   mutation-score:
@@ -69,8 +73,39 @@ runs:
       env:
         INPUT_VERSION: ${{ inputs.version }}
 
+    - name: Compute lmut cache key
+      id: cache-key
+      shell: bash
+      run: |
+        key="$("${{ github.action_path }}/scripts/cache-key.sh")"
+        echo "key=$key" >>"$GITHUB_OUTPUT"
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_TEST_COMMAND: ${{ inputs.test-command }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_TIMEOUT: ${{ inputs.timeout }}
+        INPUT_ARGS: ${{ inputs.args }}
+        INPUT_VERSION: ${{ inputs.version }}
+
+    - name: Restore lmut cache
+      id: cache-restore
+      if: ${{ inputs.cache != 'false' }}
+      # Best-effort: a cache outage must never fail mutation testing.
+      # On error cache-hit is empty, so the Run step executes normally.
+      continue-on-error: true
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ github.workspace }}/.lmut-cache
+        key: ${{ steps.cache-key.outputs.key }}
+
+    - name: Restore lmut log from cache
+      if: ${{ inputs.cache != 'false' && steps.cache-restore.outputs.cache-hit == 'true' }}
+      shell: bash
+      run: cp "${{ github.workspace }}/.lmut-cache/lmut.log" "$RUNNER_TEMP/lmut.log"
+
     - name: Run mutation testing
       id: run
+      if: ${{ steps.cache-restore.outputs.cache-hit != 'true' }}
       shell: bash
       run: ${{ github.action_path }}/scripts/run.sh
       env:
@@ -79,6 +114,22 @@ runs:
         INPUT_CONFIG: ${{ inputs.config }}
         INPUT_TIMEOUT: ${{ inputs.timeout }}
         INPUT_ARGS: ${{ inputs.args }}
+
+    - name: Stage lmut log for cache
+      if: ${{ inputs.cache != 'false' && steps.cache-restore.outputs.cache-hit != 'true' }}
+      shell: bash
+      run: |
+        mkdir -p "${{ github.workspace }}/.lmut-cache"
+        cp "$RUNNER_TEMP/lmut.log" "${{ github.workspace }}/.lmut-cache/lmut.log"
+
+    - name: Save lmut cache
+      if: ${{ inputs.cache != 'false' && steps.cache-restore.outputs.cache-hit != 'true' }}
+      # Best-effort: a save conflict must never fail a green run.
+      continue-on-error: true
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ github.workspace }}/.lmut-cache
+        key: ${{ steps.cache-key.outputs.key }}
 
     - name: Parse mutation score
       id: parse

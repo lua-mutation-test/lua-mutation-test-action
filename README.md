@@ -53,6 +53,7 @@ Survived: lua/init.lua:42:5 — changed `==` to `~=`
 | `job-summary` | Append the score headline and survivor table to the job summary. | `true` |
 | `annotations` | Emit a `::warning` annotation per survived mutant (capped at 10). | `true` |
 | `install` | Download and install the `lmut` binary. Set to `false` when `lmut` is already on `PATH`. | `true` |
+| `cache` | Reuse the previous run's `lmut.log` from the GitHub Actions cache when all run inputs are unchanged. | `true` |
 
 ## Outputs
 
@@ -61,6 +62,28 @@ Survived: lua/init.lua:42:5 — changed `==` to `~=`
 | `mutation-score` | Mutation score percent (e.g. `87.5`). |
 | `killed` | Number of killed mutants. |
 | `survived` | Number of survived mutants. |
+
+## Caching
+
+Repeat runs with identical inputs skip `lmut run` and reuse the previous
+`lmut.log` from the GitHub Actions cache — re-runs, retries, and identical
+pushes finish instantly, while `parse`/`gate`/`report`/`comment` work
+unchanged on the restored log.
+
+What is cached: the raw `lmut.log`, keyed on the `lmut` version, runner
+OS/arch, contents of every `*.lua` file in the workspace, config file
+contents, `test-command`, `timeout`, `args`, and `path`. Post-processing
+inputs (`fail-under`, `comment`, `job-summary`, `annotations`) are not part
+of the key — changing them reuses the cached log.
+
+Determinism assumption: identical inputs are assumed to produce identical
+results. A flaky test suite can poison the cache with a lucky (or unlucky)
+score — bust it by running once with `cache: 'false'`, which skips all
+cache steps with zero behavior change.
+
+Caches unused for 7 days are evicted by GitHub, and cache scope follows the
+usual branch rules (pull requests get their own scope; fork PRs can restore
+but not save, so they always run fresh and never poison the base cache).
 
 ## Examples
 
