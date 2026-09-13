@@ -84,7 +84,7 @@ main() {
   local runner_os="${RUNNER_OS:?RUNNER_OS is not set}"
   local runner_arch="${RUNNER_ARCH:?RUNNER_ARCH is not set}"
 
-  local resolved asset tag url archive destdir lmut_path bindir
+  local resolved asset tag url archive destdir bindir
   resolved="$(resolve_version "$version")"
   asset="$(asset_name "$runner_os" "$runner_arch")"
   tag="v${resolved}"
@@ -100,15 +100,20 @@ main() {
   fi
   tar -xzf "$archive" -C "$destdir"
 
-  lmut_path="$(find "$destdir" -name 'lmut' -type f -print | head -n 1 || true)"
-  if [[ -z "${lmut_path:-}" ]]; then
-    echo "error: lmut binary not found in $archive" >&2
+  # Upstream tarballs name the binary `lua-mutation-test`, not `lmut`.
+  # Accept either and normalize to `$bindir/lmut` on PATH.
+  local found_path
+  found_path="$(find "$destdir" \( -name 'lmut' -o -name 'lua-mutation-test' \) -type f -print | head -n 1 || true)"
+  if [[ -z "${found_path:-}" ]]; then
+    echo "error: lmut binary not found in $archive (looked for 'lmut' and 'lua-mutation-test')" >&2
     return 1
   fi
-  chmod +x "$lmut_path"
-  bindir="$(dirname "$lmut_path")"
+  chmod +x "$found_path"
+  bindir="${destdir}/bin"
+  mkdir -p "$bindir"
+  cp "$found_path" "${bindir}/lmut"
   echo "$bindir" >>"$GITHUB_PATH"
-  echo "Installed lmut ${resolved} to ${bindir}"
+  echo "Installed lmut ${resolved} to ${bindir}/lmut"
 }
 
 if [[ "${BASH_SOURCE[0]:-}" == "$0" ]]; then

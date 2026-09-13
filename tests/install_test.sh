@@ -17,6 +17,9 @@ run_fn() {
 # - API calls (no `-o` flag) print {"tag_name": "$CURL_RELEASE_TAG"}.
 # - Download calls (`-o <file>`) build a REAL tarball of $CURL_PAYLOAD_DIR
 #   at <file> so `tar -xzf` in install.sh is exercised for real.
+#   $CURL_PAYLOAD_FILE selects the file name packed (default `lmut`);
+#   upstream ships `lua-mutation-test`. When CURL_PAYLOAD_EMPTY is set,
+#   an empty tarball is built instead.
 # - When CURL_FAIL is set, curl exits with that code instead.
 # Requires: TEST_TMP exported. Prints the fakebin dir.
 make_fakebin() {
@@ -38,8 +41,10 @@ if [[ -n "${CURL_FAIL:-}" ]]; then
 fi
 if [[ -z "$out" ]]; then
   printf '{"tag_name": "%s"}\n' "${CURL_RELEASE_TAG:-v9.9.9}"
+elif [[ -n "${CURL_PAYLOAD_EMPTY:-}" ]]; then
+  tar -czf "$out" --files-from /dev/null
 else
-  tar -czf "$out" -C "${CURL_PAYLOAD_DIR:?}" lmut
+  tar -czf "$out" -C "${CURL_PAYLOAD_DIR:?}" "${CURL_PAYLOAD_FILE:-lmut}"
 fi
 STUB
   chmod +x "$fakebin/curl"
@@ -191,4 +196,27 @@ function test_install_latest_resolves_then_installs() {
   assert_contains "0.2.0" "$out"
   bindir="$(cat "$TEST_TMP/ghpath")"
   assert_is_file "$bindir/lmut"
+}
+
+function test_install_accepts_upstream_binary_name() {
+  mkdir -p "$TEST_TMP/payload"
+  printf '#!/usr/bin/env bash\necho lmut-stub\n' >"$TEST_TMP/payload/lua-mutation-test"
+  chmod +x "$TEST_TMP/payload/lua-mutation-test"
+  export CURL_PAYLOAD_DIR="$TEST_TMP/payload"
+  export CURL_PAYLOAD_FILE="lua-mutation-test"
+  : >"$TEST_TMP/ghpath"
+  out="$(INPUT_VERSION="0.0.3" RUNNER_OS="Linux" RUNNER_ARCH="X64" RUNNER_TEMP="$TEST_TMP" GITHUB_PATH="$TEST_TMP/ghpath" PATH="$(make_fakebin):$PATH" bash "$INSTALL_SH" 2>&1)"
+  code="$?"
+  assert_same "0" "$code"
+  bindir="$(cat "$TEST_TMP/ghpath")"
+  assert_is_file "$bindir/lmut"
+}
+
+function test_install_empty_tarball_errors_clearly() {
+  export CURL_PAYLOAD_EMPTY="1"
+  : >"$TEST_TMP/ghpath"
+  out="$(INPUT_VERSION="0.0.3" RUNNER_OS="Linux" RUNNER_ARCH="X64" RUNNER_TEMP="$TEST_TMP" GITHUB_PATH="$TEST_TMP/ghpath" PATH="$(make_fakebin):$PATH" bash "$INSTALL_SH" 2>&1)"
+  code="$?"
+  assert_not_same "0" "$code"
+  assert_contains "lmut binary not found" "$out"
 }
