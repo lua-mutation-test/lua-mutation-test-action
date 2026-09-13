@@ -1,0 +1,3 @@
+# Sample config for the smoke-test fixture (see fixtures/sample/).
+# The action passes `test-command` through, overriding this when set.
+test_command = "busted"

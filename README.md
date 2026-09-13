@@ -19,6 +19,8 @@ on:
 jobs:
   mutation:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -47,6 +49,9 @@ Survived: lua/init.lua:42:5 — changed `==` to `~=`
 | `fail-under` | Fail the step if mutation score is below this percent (0–100). `0` disables the gate. | `0` |
 | `timeout` | Per-mutant test timeout in seconds. Overrides config file. | `""` |
 | `args` | Extra args passed through to `lmut run` (e.g. `--report-format json`). | `""` |
+| `comment` | Post/update a sticky PR comment with the results (needs `pull-requests: write`). | `false` |
+| `job-summary` | Append the score headline and survivor table to the job summary. | `true` |
+| `annotations` | Emit a `::warning` annotation per survived mutant (capped at 10). | `true` |
 
 ## Outputs
 
@@ -106,6 +111,35 @@ The config file holds the same options as the CLI — see the [main repo](https:
 Supported runners: `ubuntu-latest`, `macos-latest`. Windows support planned.
 
 > Note: This action and the underlying tool are pre-`1.0` (ZeroVer `0.x`). Inputs, CLI flags, and behavior may change.
+
+## Permissions
+
+| Use case | Permissions needed |
+| -------- | ------------------ |
+| Base run (mutation testing, outputs) | default (`contents: read`) |
+| Job summary + annotations | no extra permissions |
+| PR comment (`comment: true`) | `pull-requests: write` |
+
+Every example workflow in this file sets an explicit `permissions:` block —
+least privilege by default. When enabling the PR comment, add
+`pull-requests: write`:
+
+```yaml
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run mutation testing
+        uses: lua-mutation-test/lua-mutation-test-action@v1
+        with:
+          path: lua
+          test-command: busted
+```
 
 ## Contributing
 
