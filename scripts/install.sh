@@ -9,9 +9,29 @@ set -euo pipefail
 
 LMUT_REPO="lua-mutation-test/lua-mutation-test"
 LMUT_API_URL="https://api.github.com/repos/${LMUT_REPO}/releases/latest"
+LMUT_RELEASES_URL="https://api.github.com/repos/${LMUT_REPO}/releases?per_page=100"
+
+# resolve_float <major[.minor]>: print the highest X.Y.Z release whose
+# version starts with the given prefix (e.g. "0" -> 0.1.0, "0.0" -> 0.0.4).
+resolve_float() {
+  local prefix="${1:?Usage: resolve_float <major[.minor]>}"
+  local api_json tags best
+  if ! api_json="$(curl -fsSL "$LMUT_RELEASES_URL" 2>/dev/null)"; then
+    echo "error: could not resolve 'v${prefix}' from $LMUT_RELEASES_URL" >&2
+    return 1
+  fi
+  tags="$(echo "$api_json" | grep -Eo '"tag_name": *"v?[0-9]+\.[0-9]+\.[0-9]+"' | grep -Eo 'v?[0-9]+\.[0-9]+\.[0-9]+' || true)"
+  best="$(echo "$tags" | grep -E "^v?${prefix//./\\.}\." | sort -V | tail -n 1 || true)"
+  if [[ -z "${best:-}" ]]; then
+    echo "error: could not resolve 'v${prefix}': no matching release" >&2
+    return 1
+  fi
+  echo "${best#v}"
+}
 
 # resolve_version <version|latest>: print the bare X.Y.Z version.
 # `latest` follows the newest GitHub Release tag (leading `v` stripped);
+# `vMAJOR` / `vMAJOR.MINOR` floats resolve to the highest matching release;
 # a pinned version is used verbatim (leading `v` accepted, then stripped).
 resolve_version() {
   local requested="${1:?Usage: resolve_version <version|latest>}"
@@ -27,10 +47,14 @@ resolve_version() {
       return 1
     fi
     echo "${tag#v}"
+  elif [[ "$requested" =~ ^v?([0-9]+\.[0-9]+)$ ]]; then
+    resolve_float "${BASH_REMATCH[1]}"
+  elif [[ "$requested" =~ ^v?([0-9]+)$ ]]; then
+    resolve_float "${BASH_REMATCH[1]}"
   elif [[ "$requested" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo "${requested#v}"
   else
-    echo "error: invalid version: '$requested' (expected 'latest' or 'X.Y.Z')" >&2
+    echo "error: invalid version: '$requested' (expected 'latest', 'vMAJOR', 'vMAJOR.MINOR', or 'X.Y.Z')" >&2
     return 1
   fi
 }

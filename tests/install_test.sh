@@ -40,7 +40,11 @@ if [[ -n "${CURL_FAIL:-}" ]]; then
   exit "$CURL_FAIL"
 fi
 if [[ -z "$out" ]]; then
-  printf '{"tag_name": "%s"}\n' "${CURL_RELEASE_TAG:-v9.9.9}"
+  if [[ "$*" == *"releases?per_page"* ]]; then
+    printf '%s\n' "${CURL_RELEASE_LIST:-[]}"
+  else
+    printf '{"tag_name": "%s"}\n' "${CURL_RELEASE_TAG:-v9.9.9}"
+  fi
 elif [[ -n "${CURL_PAYLOAD_EMPTY:-}" ]]; then
   tar -czf "$out" --files-from /dev/null
 else
@@ -74,10 +78,45 @@ function test_resolve_version_strips_leading_v() {
 function test_resolve_version_rejects_invalid() {
   run_fn resolve_version "banana" >/dev/null 2>&1
   assert_not_same "0" "$?"
-  run_fn resolve_version "1.2" >/dev/null 2>&1
-  assert_not_same "0" "$?"
   run_fn resolve_version "" >/dev/null 2>&1
   assert_not_same "0" "$?"
+}
+
+LIST_JSON='[{"tag_name": "v0.0.3"}, {"tag_name": "v0.0.4"}, {"tag_name": "v0.1.0"}, {"tag_name": "v1.2.3"}]'
+
+function test_resolve_version_major_float_picks_max() {
+  export CURL_RELEASE_LIST="$LIST_JSON"
+  PATH="$(make_fakebin):$PATH" run_fn resolve_version "v0" >"$TEST_TMP/out.txt" 2>&1
+  assert_exit_code "0"
+  assert_same "0.1.0" "$(cat "$TEST_TMP/out.txt")"
+}
+
+function test_resolve_version_major_float_without_v() {
+  export CURL_RELEASE_LIST="$LIST_JSON"
+  PATH="$(make_fakebin):$PATH" run_fn resolve_version "1" >"$TEST_TMP/out.txt" 2>&1
+  assert_exit_code "0"
+  assert_same "1.2.3" "$(cat "$TEST_TMP/out.txt")"
+}
+
+function test_resolve_version_minor_float_picks_max() {
+  export CURL_RELEASE_LIST="$LIST_JSON"
+  PATH="$(make_fakebin):$PATH" run_fn resolve_version "v0.0" >"$TEST_TMP/out.txt" 2>&1
+  assert_exit_code "0"
+  assert_same "0.0.4" "$(cat "$TEST_TMP/out.txt")"
+}
+
+function test_resolve_version_float_no_match() {
+  export CURL_RELEASE_LIST="$LIST_JSON"
+  PATH="$(make_fakebin):$PATH" run_fn resolve_version "v2" >"$TEST_TMP/out.txt" 2>&1
+  assert_not_same "0" "$?"
+  assert_contains "could not resolve" "$(cat "$TEST_TMP/out.txt")"
+}
+
+function test_resolve_version_float_api_failure() {
+  export CURL_FAIL="22"
+  PATH="$(make_fakebin):$PATH" run_fn resolve_version "v0" >"$TEST_TMP/out.txt" 2>&1
+  assert_not_same "0" "$?"
+  assert_contains "could not resolve" "$(cat "$TEST_TMP/out.txt")"
 }
 
 function test_resolve_version_invalid_message() {

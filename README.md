@@ -42,7 +42,7 @@ Survived: lua/init.lua:42:5 — changed `==` to `~=`
 
 | Input | Description | Default |
 | ----- | ----------- | ------- |
-| `version` | Version of `lua-mutation-test` to install (e.g. `0.1.0`). | `latest` |
+| `version` | Version of `lua-mutation-test` to install: `latest`, a `vMAJOR` / `vMAJOR.MINOR` float (e.g. `v0`), or a pin (e.g. `0.0.4`). | `latest` |
 | `path` | File or directory to mutate. | `.` |
 | `test-command` | Command run against each mutant (e.g. `busted`, `lux test`). Overrides config file. | `""` |
 | `config` | Path to `.lua-mutation-test.toml` / `.json` config file. | `""` (auto-discovered) |
@@ -92,7 +92,7 @@ but not save, so they always run fresh and never poison the base cache).
 ```yaml
 - uses: lua-mutation-test/lua-mutation-test-action@v0
   with:
-    version: 0.0.4
+    version: v0
     path: lua
     test-command: busted
     fail-under: 80

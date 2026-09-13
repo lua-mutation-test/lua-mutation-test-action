@@ -4,7 +4,7 @@ author: lua-mutation-test
 
 inputs:
   version:
-    description: Version of lua-mutation-test to install (e.g. '0.1.0'); 'latest' follows the newest GitHub Release.
+    description: "Version of lua-mutation-test to install: 'latest', a 'vMAJOR' / 'vMAJOR.MINOR' float (e.g. 'v0'), or a pin (e.g. '0.0.4')."
     required: false
     default: latest
   path:
