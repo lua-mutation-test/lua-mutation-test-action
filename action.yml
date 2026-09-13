@@ -1,0 +1,105 @@
+name: lua-mutation-test
+description: Run mutation testing for Lua with lmut and fail below a score gate.
+author: lua-mutation-test
+
+inputs:
+  version:
+    description: Version of lua-mutation-test to install (e.g. '0.1.0'); 'latest' follows the newest GitHub Release.
+    required: false
+    default: latest
+  path:
+    description: File or directory to mutate.
+    required: false
+    default: .
+  test-command:
+    description: Command run against each mutant (e.g. 'busted', 'lux test'). Overrides config file.
+    required: false
+    default: ''
+  config:
+    description: Path to a .lua-mutation-test.toml / .json config file (auto-discovered when empty).
+    required: false
+    default: ''
+  fail-under:
+    description: Fail the step if mutation score is below this percent (0-100). '0' disables the gate.
+    required: false
+    default: '0'
+  timeout:
+    description: Per-mutant test timeout in seconds. Overrides config file.
+    required: false
+    default: ''
+  args:
+    description: Extra args passed through to `lmut run`.
+    required: false
+    default: ''
+  comment:
+    description: Post/update a sticky PR comment with the results ('true'/'false').
+    required: false
+    default: 'false'
+  job-summary:
+    description: Append the results to the job summary ('true'/'false').
+    required: false
+    default: 'true'
+  annotations:
+    description: Emit a warning annotation per survived mutant ('true'/'false').
+    required: false
+    default: 'true'
+
+outputs:
+  mutation-score:
+    description: Mutation score percent (e.g. '87.5').
+    value: ${{ steps.parse.outputs.mutation-score }}
+  killed:
+    description: Number of killed mutants.
+    value: ${{ steps.parse.outputs.killed }}
+  survived:
+    description: Number of survived mutants.
+    value: ${{ steps.parse.outputs.survived }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install lmut
+      shell: bash
+      run: ${{ github.action_path }}/scripts/install.sh
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+
+    - name: Run mutation testing
+      id: run
+      shell: bash
+      run: ${{ github.action_path }}/scripts/run.sh
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_TEST_COMMAND: ${{ inputs.test-command }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_TIMEOUT: ${{ inputs.timeout }}
+        INPUT_ARGS: ${{ inputs.args }}
+
+    - name: Parse mutation score
+      id: parse
+      shell: bash
+      run: ${{ github.action_path }}/scripts/parse.sh "$RUNNER_TEMP/lmut.log"
+
+    - name: Check score gate
+      shell: bash
+      run: ${{ github.action_path }}/scripts/gate.sh "${{ steps.parse.outputs.mutation-score }}"
+      env:
+        INPUT_FAIL_UNDER: ${{ inputs.fail-under }}
+
+    - name: Report survivors
+      if: always()
+      shell: bash
+      run: |
+        { grep '^Survived:' "$RUNNER_TEMP/lmut.log" 2>/dev/null || true; } \
+          | "${{ github.action_path }}/scripts/report.sh"
+      env:
+        INPUT_JOB_SUMMARY: ${{ inputs.job-summary }}
+        INPUT_ANNOTATIONS: ${{ inputs.annotations }}
+
+    - name: Comment on PR
+      if: always()
+      shell: bash
+      run: ${{ github.action_path }}/scripts/comment.sh
+      env:
+        INPUT_COMMENT: ${{ inputs.comment }}
+        GH_TOKEN: ${{ github.token }}
