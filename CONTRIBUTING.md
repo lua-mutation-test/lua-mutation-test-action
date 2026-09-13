@@ -36,8 +36,8 @@ single-purpose commits using
 
 Releases are fully automated with
 [semantic-release](https://semantic-release.gitbook.io), mirroring
-`rcasia/neotest-java`. `.github/workflows/release.yml` runs daily at
-08:00 UTC (or on demand via `gh workflow run release`): it runs the
+`rcasia/neotest-java`. `.github/workflows/release.yml` runs on every push to `main`
+(or on demand via `gh workflow run release`): it runs the
 test suite (`test.yml` via `workflow_call`), then derives the next
 version from Conventional Commits on `main` (`.releaserc.json`):
 

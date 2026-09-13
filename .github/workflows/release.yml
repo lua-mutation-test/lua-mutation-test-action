@@ -1,7 +1,7 @@
 # Automated SemVer releases via semantic-release (Refs #10),
 # mirroring rcasia/neotest-java.
 #
-# Runs daily at 08:00 UTC (or on demand via workflow_dispatch): after
+# Runs on every push to main (or on demand via workflow_dispatch): after
 # the test suite passes, npx semantic-release derives the next version
 # from Conventional Commits on main (feat -> minor, fix/refactor/perf
 # -> patch, BREAKING CHANGE -> major), creates the vMAJOR.MINOR.PATCH
@@ -12,10 +12,13 @@
 name: release
 
 on:
-  schedule:
-    # Runs every day at 08:00 UTC
-    - cron: "0 8 * * *"
+  push:
+    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   test:
