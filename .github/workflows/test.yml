@@ -148,7 +148,12 @@ jobs:
           cat > "$RUNNER_TEMP/fakebin/lmut" <<'EOF'
           #!/bin/sh
           # Failing stub: the cached second run must never reach lmut.
-          # --version also fails so cache-key.sh falls back to the pinned input.
+          # --version still answers: cache-key.sh legitimately probes it,
+          # and a real lmut would answer too.
+          if [ "$1" = "--version" ]; then
+            echo "lmut 0.0.3"
+            exit 0
+          fi
           touch "$RUNNER_TEMP/lmut-invoked"
           echo "lmut should not run on a cache hit" >&2
           exit 3
