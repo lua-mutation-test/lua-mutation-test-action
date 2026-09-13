@@ -268,3 +268,14 @@ function test_file_target_path_supported() {
   lines="$(printf '%s\n' "$key" | wc -l | tr -d ' ')"
   assert_same "1" "$lines"
 }
+
+function test_all_action_scripts_are_executable() {
+  local script
+  for script in "$REPO_ROOT"/scripts/*.sh; do
+    if [[ ! -x "$script" ]]; then
+      echo "not executable: $script" >&2
+      exit 1
+    fi
+  done
+  assert_exit_code "0"
+}
