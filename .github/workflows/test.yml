@@ -117,8 +117,21 @@ jobs:
 
       - name: Assert outputs and summary
         if: ${{ hashFiles('action.yml') != '' }}
+        env:
+          INPUT_JOB_SUMMARY: 'true'
+          INPUT_ANNOTATIONS: 'false'
+          INPUT_SCORE: ${{ steps.mutation.outputs.mutation-score }}
+          INPUT_KILLED: ${{ steps.mutation.outputs.killed }}
+          INPUT_SURVIVED: ${{ steps.mutation.outputs.survived }}
         run: |
           test "${{ steps.mutation.outputs.mutation-score }}" = "50.0" || { echo "wrong mutation-score: ${{ steps.mutation.outputs.mutation-score }}"; exit 1; }
           test "${{ steps.mutation.outputs.killed }}" = "1" || { echo "wrong killed: ${{ steps.mutation.outputs.killed }}"; exit 1; }
           test "${{ steps.mutation.outputs.survived }}" = "1" || { echo "wrong survived: ${{ steps.mutation.outputs.survived }}"; exit 1; }
+          # NOTE: $GITHUB_STEP_SUMMARY is unique per step, so the summary the
+          # action wrote cannot be read here. Re-run report.sh on the same
+          # lmut.log in THIS step and assert on this step's summary file.
+          # The action-level wiring is proven by the ::warning annotation
+          # visible in the 'Run local action against fixture' step log.
+          { grep '^Survived:' "$RUNNER_TEMP/lmut.log" || true; } | ./scripts/report.sh
           grep -qi "mutation score" "$GITHUB_STEP_SUMMARY"
+          grep -q "50\.0%" "$GITHUB_STEP_SUMMARY"

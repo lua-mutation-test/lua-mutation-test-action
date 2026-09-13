@@ -100,6 +100,9 @@ runs:
       env:
         INPUT_JOB_SUMMARY: ${{ inputs.job-summary }}
         INPUT_ANNOTATIONS: ${{ inputs.annotations }}
+        INPUT_SCORE: ${{ steps.parse.outputs.mutation-score }}
+        INPUT_KILLED: ${{ steps.parse.outputs.killed }}
+        INPUT_SURVIVED: ${{ steps.parse.outputs.survived }}
 
     - name: Comment on PR
       if: always()
@@ -107,4 +110,7 @@ runs:
       run: ${{ github.action_path }}/scripts/comment.sh
       env:
         INPUT_COMMENT: ${{ inputs.comment }}
+        INPUT_SCORE: ${{ steps.parse.outputs.mutation-score }}
+        INPUT_KILLED: ${{ steps.parse.outputs.killed }}
+        INPUT_SURVIVED: ${{ steps.parse.outputs.survived }}
         GH_TOKEN: ${{ github.token }}
