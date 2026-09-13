@@ -7,9 +7,8 @@
 #   STUBBED lmut on PATH, so the test is deterministic and offline; asserts
 #   the step outputs and the job-summary content.
 #
-# Guards that skip when a directory/file is absent keep this file green
-# before Tracks 1-3 land; they can be simplified once action.yml,
-# scripts/, and tests/ exist.
+# - reusable: release.yml calls this workflow (workflow_call) and only
+#   publishes when the suite passes.
 
 name: test
 
@@ -18,6 +17,7 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read

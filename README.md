@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Run mutation testing
-        uses: lua-mutation-test/lua-mutation-test-action@v1
+        uses: lua-mutation-test/lua-mutation-test-action@v0
         with:
           path: lua
           test-command: busted
@@ -67,7 +67,7 @@ Survived: lua/init.lua:42:5 — changed `==` to `~=`
 ### Pin a version and gate on score
 
 ```yaml
-- uses: lua-mutation-test/lua-mutation-test-action@v1
+- uses: lua-mutation-test/lua-mutation-test-action@v0
   with:
     version: 0.1.0
     path: lua
@@ -78,7 +78,7 @@ Survived: lua/init.lua:42:5 — changed `==` to `~=`
 ### Use a config file
 
 ```yaml
-- uses: lua-mutation-test/lua-mutation-test-action@v1
+- uses: lua-mutation-test/lua-mutation-test-action@v0
   with:
     path: lua
     config: .lua-mutation-test.toml
@@ -90,7 +90,7 @@ The config file holds the same options as the CLI — see the [main repo](https:
 ### Emit a JSON report
 
 ```yaml
-- uses: lua-mutation-test/lua-mutation-test-action@v1
+- uses: lua-mutation-test/lua-mutation-test-action@v0
   with:
     path: lua
     test-command: busted
@@ -141,7 +141,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Run mutation testing
-        uses: lua-mutation-test/lua-mutation-test-action@v1
+        uses: lua-mutation-test/lua-mutation-test-action@v0
         with:
           path: lua
           test-command: busted
