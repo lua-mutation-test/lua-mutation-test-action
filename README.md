@@ -20,7 +20,7 @@ jobs:
   mutation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Run mutation testing
         uses: lua-mutation-test/lua-mutation-test-action@v1
@@ -90,7 +90,7 @@ The config file holds the same options as the CLI — see the [main repo](https:
     test-command: busted
     args: --report-format json --report-output mutation-report.json
 
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@v6
   with:
     name: mutation-report
     path: mutation-report.json
