@@ -92,7 +92,7 @@ but not save, so they always run fresh and never poison the base cache).
 ```yaml
 - uses: lua-mutation-test/lua-mutation-test-action@v0
   with:
-    version: 0.0.3
+    version: 0.0.4
     path: lua
     test-command: busted
     fail-under: 80
