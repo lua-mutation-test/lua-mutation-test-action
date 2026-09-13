@@ -64,7 +64,8 @@ jobs:
             [ -d "$d" ] && dirs+=("$d")
           done
           if [ "${#dirs[@]}" -gt 0 ]; then
-            out="$("$RUNNER_TEMP/bin/shfmt" -l "${dirs[@]}")"
+            # Repo convention is 2-space indent (not shfmt's tab default).
+            out="$("$RUNNER_TEMP/bin/shfmt" -i 2 -l "${dirs[@]}")"
             if [ -n "$out" ]; then
               echo "$out"
               echo "shfmt: files above need formatting"
@@ -110,6 +111,7 @@ jobs:
         if: ${{ hashFiles('action.yml') != '' }}
         uses: ./
         with:
+          install: 'false' # stub lmut from the previous step is on PATH
           path: fixtures/sample
           test-command: busted
 

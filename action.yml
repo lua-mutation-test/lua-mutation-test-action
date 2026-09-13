@@ -43,6 +43,10 @@ inputs:
     description: Emit a warning annotation per survived mutant ('true'/'false').
     required: false
     default: 'true'
+  install:
+    description: Download and install the lmut binary ('true'/'false'). Set to 'false' when lmut is already on PATH (e.g. pre-installed runners, CI smoke tests with a stub).
+    required: false
+    default: 'true'
 
 outputs:
   mutation-score:
@@ -59,6 +63,7 @@ runs:
   using: composite
   steps:
     - name: Install lmut
+      if: ${{ inputs.install != 'false' }}
       shell: bash
       run: ${{ github.action_path }}/scripts/install.sh
       env:

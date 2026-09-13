@@ -40,7 +40,8 @@ Pre-`1.0` (ZeroVer `0.x`): inputs, flags, and behavior may change.
 State exactly what you ran (`./lib/bashunit ...`, `shellcheck ...`) in
 your final report.
 
-Quality gates: `shellcheck` clean, `shfmt`-formatted, `actionlint` clean
+Quality gates: `shellcheck` clean, `shfmt -i 2`-formatted (repo uses
+2-space indent, not shfmt's tab default), `actionlint` clean
 for all YAML.
 
 ## Script contracts (stable — do not change unilaterally)

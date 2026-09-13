@@ -52,6 +52,7 @@ Survived: lua/init.lua:42:5 — changed `==` to `~=`
 | `comment` | Post/update a sticky PR comment with the results (needs `pull-requests: write`). | `false` |
 | `job-summary` | Append the score headline and survivor table to the job summary. | `true` |
 | `annotations` | Emit a `::warning` annotation per survived mutant (capped at 10). | `true` |
+| `install` | Download and install the `lmut` binary. Set to `false` when `lmut` is already on `PATH`. | `true` |
 
 ## Outputs
 
@@ -109,6 +110,11 @@ The config file holds the same options as the CLI — see the [main repo](https:
 4. Parses the mutation score and exposes it as step outputs; fails if below `fail-under`.
 
 Supported runners: `ubuntu-latest`, `macos-latest`. Windows support planned.
+
+> Note: upstream currently publishes only the Linux x86_64 binary, so
+> installs on macOS/ARM64 fail with a clear error until more assets are
+> published (tracked upstream). The action maps each runner to its
+> expected asset name and reports a clean error for missing assets.
 
 > Note: This action and the underlying tool are pre-`1.0` (ZeroVer `0.x`). Inputs, CLI flags, and behavior may change.
 
