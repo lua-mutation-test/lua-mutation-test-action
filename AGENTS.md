@@ -8,7 +8,7 @@ Pre-`1.0` (ZeroVer `0.x`): inputs, flags, and behavior may change.
 
 - Everything on `main`. Small, single-purpose commits, Conventional Commits
   (`feat:`, `fix:`, `test:`, `chore:`, `docs:`).
-- **gh issues (#1–#15) are the trackers**: reference them in commits
+- **gh issues (#1–#16) are the trackers**: reference them in commits
   (`Refs #N`), post progress comments, close when done.
 - Only the main agent commits and pushes. Subagents write files only —
   never `git commit`, `git push`, or `gh` mutations.

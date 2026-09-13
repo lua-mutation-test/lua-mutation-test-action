@@ -7,7 +7,7 @@ single-purpose commits using
 
 ## Workflow
 
-- Work is tracked in GitHub issues (#1–#15). Reference them in commits
+- Work is tracked in GitHub issues (#1–#16). Reference them in commits
   (`Refs #N`) and close them when done.
 - `git pull --rebase` before starting; CI must be green before and after
   every change.

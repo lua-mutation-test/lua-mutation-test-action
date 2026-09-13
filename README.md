@@ -69,7 +69,7 @@ Survived: lua/init.lua:42:5 — changed `==` to `~=`
 ```yaml
 - uses: lua-mutation-test/lua-mutation-test-action@v0
   with:
-    version: 0.1.0
+    version: 0.0.3
     path: lua
     test-command: busted
     fail-under: 80
@@ -109,7 +109,8 @@ The config file holds the same options as the CLI — see the [main repo](https:
 3. Runs `lmut run <path>` with your `test-command`, `config`, `timeout`, and `args`.
 4. Parses the mutation score and exposes it as step outputs; fails if below `fail-under`.
 
-Supported runners: `ubuntu-latest`, `macos-latest`. Windows support planned.
+Supported runners: `ubuntu-latest` (x86_64). macOS and Windows runners
+are blocked until upstream publishes binaries for them (#16).
 
 > Note: upstream currently publishes only the Linux x86_64 binary, so
 > installs on macOS/ARM64 fail with a clear error until more assets are
@@ -151,7 +152,8 @@ jobs:
 
 Contributions are welcome! This is an early-stage project — issues and PRs against `action.yml` and the docs are especially helpful.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) when available, and the [main tool's contributing guide](https://github.com/lua-mutation-test/lua-mutation-test/blob/main/CONTRIBUTING.md) for the agentic workflow used in this org.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the test-driven workflow,
+and the [main tool's contributing guide](https://github.com/lua-mutation-test/lua-mutation-test/blob/main/CONTRIBUTING.md) for the agentic workflow used in this org.
 
 ## License
 
