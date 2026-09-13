@@ -32,6 +32,28 @@ single-purpose commits using
 - `actionlint` clean over `.github/workflows/`.
 - Shell formatted with `shfmt`.
 
+## Releasing (SemVer, #10)
+
+Tags are `vMAJOR.MINOR.PATCH` with an optional `-prerelease` suffix
+(`v0.1.0`, `v1.0.0-rc.1`), validated by `scripts/release.sh`
+(`./lib/bashunit tests/release_test.sh`). Build metadata (`+build`)
+is rejected (`+` is URL-hostile in git tags and carries no
+precedence). Stable releases move floating `vMAJOR` / `vMAJOR.MINOR`
+tags, so users can pin `uses: ...@v0` (while `0.x`) or `@v1`.
+
+Two ways to release; both run `.github/workflows/release.yml`, which
+creates the GitHub Release (generated notes) and moves the floats:
+
+1. `git tag -a v0.1.0 -m "Release v0.1.0" && git push origin v0.1.0`
+   (the tag must be on green `main` — enforced in-workflow).
+2. `gh workflow run release --ref main -f tag=v0.1.0` (tags the
+   current `main` HEAD; refuses unless the latest `test` run on
+   `main` is green).
+
+Prereleases are marked prerelease and never move floating tags.
+Publishing the action to the GitHub Marketplace is a manual one-click
+step on the release page ("Publish this Action").
+
 ## Smoke test
 
 The `smoke` job in `.github/workflows/test.yml` runs the local action

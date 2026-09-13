@@ -1,0 +1,84 @@
+# Automated SemVer releases (Refs #10).
+#
+# Two entry points:
+# - push a tag vMAJOR.MINOR.PATCH[-prerelease], cut from green main; or
+# - workflow_dispatch with input `tag` (tags the current main HEAD, but
+#   refuses unless the latest test run on main is green).
+#
+# The workflow validates the tag with scripts/release.sh, creates the
+# GitHub Release with generated notes (--prerelease for -suffix tags),
+# and moves the floating vMAJOR / vMAJOR.MINOR tags for stable releases
+# so users can pin `uses: ...@v1` (or `@v0` while 0.x). Prereleases
+# never move floating tags.
+
+name: release
+
+on:
+  push:
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'SemVer tag to release (e.g. v0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+            STATUS="$(gh run list --branch main --workflow test --status completed --limit 1 --json conclusion --jq '.[0].conclusion')"
+            if [ "$STATUS" != "success" ]; then
+              echo "refusing to tag $TAG: latest test run on main is '$STATUS'" >&2
+              exit 1
+            fi
+            git tag -a "$TAG" -m "Release $TAG" HEAD
+            git push origin "$TAG"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+          git merge-base --is-ancestor "$TAG" origin/main || {
+            echo "refusing to release $TAG: not on origin/main" >&2
+            exit 1
+          }
+          echo "tag=$TAG" >>"$GITHUB_OUTPUT"
+
+      - name: Validate SemVer and compute floating tags
+        id: semver
+        run: ./scripts/release.sh "${{ steps.resolve.outputs.tag }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRE=""
+          if [ "${{ steps.semver.outputs.prerelease }}" = "true" ]; then
+            PRE="--prerelease"
+          fi
+          # SC2086: $PRE is intentionally word-split (empty or one flag).
+          # shellcheck disable=SC2086
+          gh release create "${{ steps.semver.outputs.tag }}" \
+            --title "${{ steps.semver.outputs.tag }}" \
+            --generate-notes $PRE
+
+      - name: Move floating tags
+        if: steps.semver.outputs.prerelease == 'false'
+        run: |
+          for float in ${{ steps.semver.outputs.float-tags }}; do
+            git tag -f "$float" "${{ steps.semver.outputs.tag }}"
+            git push -f origin "$float"
+          done
