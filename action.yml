@@ -93,7 +93,7 @@ runs:
       # Best-effort: a cache outage must never fail mutation testing.
       # On error cache-hit is empty, so the Run step executes normally.
       continue-on-error: true
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v6
       with:
         path: ${{ github.workspace }}/.lmut-cache
         key: ${{ steps.cache-key.outputs.key }}
@@ -126,7 +126,7 @@ runs:
       if: ${{ inputs.cache != 'false' && steps.cache-restore.outputs.cache-hit != 'true' }}
       # Best-effort: a save conflict must never fail a green run.
       continue-on-error: true
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v6
       with:
         path: ${{ github.workspace }}/.lmut-cache
         key: ${{ steps.cache-key.outputs.key }}
